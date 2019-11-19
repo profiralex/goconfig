@@ -250,7 +250,24 @@ func TestSuccessStringStrictDefault(t *testing.T) {
 	}
 }
 
-func TestSuccessStringSliceMissingDefaultEmpty(t *testing.T) {
+func TestSuccessStringSliceMissing(t *testing.T) {
+	type testStruct struct {
+		StringSliceField []string `cfg:"testKeyMissing"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, false)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if len(v.StringSliceField) != 0 {
+		t.Errorf("Expected slice len %d got %d", 0, len(v.StringSliceField))
+	}
+}
+
+func TestSuccessStringSliceMissingStrictDefaultEmpty(t *testing.T) {
 	type testStruct struct {
 		StringSliceField []string `cfg:"testKeyMissing" cfg-default:""`
 	}
@@ -263,11 +280,11 @@ func TestSuccessStringSliceMissingDefaultEmpty(t *testing.T) {
 	}
 
 	if len(v.StringSliceField) != 0 {
-		t.Errorf("Expected slice len %d got %d", 0, len(testStringSliceValueReal))
+		t.Errorf("Expected slice len %d got %d", 0, len(v.StringSliceField))
 	}
 }
 
-func TestSuccessStringSliceMissingDefaultNonEmpty(t *testing.T) {
+func TestSuccessStringSliceMissingStrictDefaultNonEmpty(t *testing.T) {
 	type testStruct struct {
 		StringSliceField []string `cfg:"testKeyMissing" cfg-default:"testValue"`
 	}
@@ -280,7 +297,7 @@ func TestSuccessStringSliceMissingDefaultNonEmpty(t *testing.T) {
 	}
 
 	if len(v.StringSliceField) != 1 {
-		t.Errorf("Expected slice len %d got %d", 1, len(testStringSliceValueReal))
+		t.Errorf("Expected slice len %d got %d", 1, len(v.StringSliceField))
 	}
 
 	if v.StringSliceField[0] != "testValue" {
@@ -288,7 +305,7 @@ func TestSuccessStringSliceMissingDefaultNonEmpty(t *testing.T) {
 	}
 }
 
-func TestSuccessStringSlice(t *testing.T) {
+func TestSuccessStringSliceStrict(t *testing.T) {
 	type testStruct struct {
 		StringSliceField []string `cfg:"testStringSliceKey"`
 	}
@@ -301,12 +318,64 @@ func TestSuccessStringSlice(t *testing.T) {
 	}
 
 	if len(v.StringSliceField) != len(testStringSliceValueReal) {
-		t.Errorf("Expected slice len %d got %d", len(v.StringSliceField), len(testStringSliceValueReal))
+		t.Errorf("Expected slice len %d got %d", len(testStringSliceValueReal), len(v.StringSliceField))
 	}
 
 	for i, v := range v.StringSliceField {
 		if v != testStringSliceValueReal[i] {
 			t.Errorf("Expected value at index %d %s got %s", i, testStringSliceValueReal[i], v)
 		}
+	}
+}
+
+func TestSuccessIntMissing(t *testing.T) {
+	type testStruct struct {
+		IntField int `cfg:"testKeyMissing"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, false)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if v.IntField != 0 {
+		t.Errorf("Expected value %d got %d", 0, v.IntField)
+	}
+}
+
+func TestSuccessIntMissingStrictDefault(t *testing.T) {
+	value := 150
+	type testStruct struct {
+		IntField int `cfg:"testKeyMissing" cfg-default:"150"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, true)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if v.IntField != value {
+		t.Errorf("Expected value %d got %d", value, v.IntField)
+	}
+}
+
+func TestSuccessIntStrict(t *testing.T) {
+	type testStruct struct {
+		IntField int `cfg:"testIntKey"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, true)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if v.IntField != testIntValueReal {
+		t.Errorf("Expected value %d got %d", testIntValueReal, v.IntField)
 	}
 }
