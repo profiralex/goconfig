@@ -12,6 +12,8 @@ const (
 	testStringKey   = "testStringKey"
 	testStringValue = "testStringValue"
 
+	testStringSliceKey = "testStringSliceKey"
+
 	testBoolKey1       = "testBoolKey1"
 	testBoolValue1     = "true"
 	testBoolValueReal1 = true
@@ -82,8 +84,12 @@ const (
 )
 
 var (
+	testStringSliceValue     = "tesStringSliceValue1,tesStringSliceValue2,tesStringSliceValue3"
+	testStringSliceValueReal = []string{"tesStringSliceValue1", "tesStringSliceValue2", "tesStringSliceValue3"}
+
 	mockEnv = map[string]string{
-		testStringKey: testStringValue,
+		testStringKey:      testStringValue,
+		testStringSliceKey: testStringSliceValue,
 
 		testBoolKey1:       testBoolValue1,
 		testBoolKey2:       testBoolValue2,
@@ -241,5 +247,66 @@ func TestSuccessStringStrictDefault(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unexpected error received")
+	}
+}
+
+func TestSuccessStringSliceMissingDefaultEmpty(t *testing.T) {
+	type testStruct struct {
+		StringSliceField []string `cfg:"testKeyMissing" cfg-default:""`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, true)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if len(v.StringSliceField) != 0 {
+		t.Errorf("Expected slice len %d got %d", 0, len(testStringSliceValueReal))
+	}
+}
+
+func TestSuccessStringSliceMissingDefaultNonEmpty(t *testing.T) {
+	type testStruct struct {
+		StringSliceField []string `cfg:"testKeyMissing" cfg-default:"testValue"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, true)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if len(v.StringSliceField) != 1 {
+		t.Errorf("Expected slice len %d got %d", 1, len(testStringSliceValueReal))
+	}
+
+	if v.StringSliceField[0] != "testValue" {
+		t.Errorf("Expected value at index %d %s got %s", 0, "testValue", v.StringSliceField[0])
+	}
+}
+
+func TestSuccessStringSlice(t *testing.T) {
+	type testStruct struct {
+		StringSliceField []string `cfg:"testStringSliceKey"`
+	}
+	v := testStruct{}
+
+	err := goconfig.Load(&v, &mockProvider, true)
+
+	if err != nil {
+		t.Errorf("Unexpected error received")
+	}
+
+	if len(v.StringSliceField) != len(testStringSliceValueReal) {
+		t.Errorf("Expected slice len %d got %d", len(v.StringSliceField), len(testStringSliceValueReal))
+	}
+
+	for i, v := range v.StringSliceField {
+		if v != testStringSliceValueReal[i] {
+			t.Errorf("Expected value at index %d %s got %s", i, testStringSliceValueReal[i], v)
+		}
 	}
 }
