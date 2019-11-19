@@ -2,7 +2,7 @@ package goconfig_test
 
 import (
 	"os"
-	"profiralex/goconfig"
+	"github.com/profiralex/goconfig"
 	"testing"
 )
 
