@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -55,7 +56,8 @@ func load(model interface{}, provider Provider, strict bool) error {
 			value = defaultValue
 		}
 
-		err = assignValue(&v, &typeField, value)
+		valueField = v.FieldByIndex(typeField.Index)
+		err = assignValue(&valueField, typeField.Type, value)
 		if err != nil {
 			return fmt.Errorf("Unable to set value for field %s: %w", typeField.Name, err)
 		}
@@ -64,16 +66,16 @@ func load(model interface{}, provider Provider, strict bool) error {
 	return nil
 }
 
-func assignValue(reflectValue *reflect.Value, typeField *reflect.StructField, value string) error {
-	switch typeField.Type.Kind() {
+func assignValue(reflectValue *reflect.Value, fieldType reflect.Type, value string) error {
+	switch fieldType.Kind() {
 	case reflect.String:
-		reflectValue.FieldByIndex(typeField.Index).SetString(value)
+		reflectValue.SetString(value)
 	case reflect.Bool:
 		value, err := strconv.ParseBool(value)
 		if err != nil {
 			return err
 		}
-		reflectValue.FieldByIndex(typeField.Index).SetBool(value)
+		reflectValue.SetBool(value)
 	case reflect.Int,
 		reflect.Int8,
 		reflect.Int16,
@@ -83,7 +85,7 @@ func assignValue(reflectValue *reflect.Value, typeField *reflect.StructField, va
 		if err != nil {
 			return err
 		}
-		reflectValue.FieldByIndex(typeField.Index).SetInt(value)
+		reflectValue.SetInt(value)
 	case reflect.Uint,
 		reflect.Uint8,
 		reflect.Uint16,
@@ -93,15 +95,33 @@ func assignValue(reflectValue *reflect.Value, typeField *reflect.StructField, va
 		if err != nil {
 			return err
 		}
-		reflectValue.FieldByIndex(typeField.Index).SetUint(value)
+		reflectValue.SetUint(value)
 	case reflect.Float32, reflect.Float64:
 		value, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return err
 		}
-		reflectValue.FieldByIndex(typeField.Index).SetFloat(value)
+		reflectValue.SetFloat(value)
+	case reflect.Slice:
+		parts := strings.Split(value, ",")
+		if len(parts) == 0 || len(parts) == 1 && parts[0] == "" {
+			break
+		}
+
+		sliceType := fieldType.Elem()
+		slice := reflect.MakeSlice(fieldType, len(parts), len(parts))
+		for i, v := range parts {
+			valueRef := slice.Index(i)
+			err := assignValue(&valueRef, sliceType, v)
+			if err != nil {
+				return fmt.Errorf("Unable to set index %d : %w", i, err)
+			}
+		}
+
+		reflectValue.Set(slice)
+
 	default:
-		return fmt.Errorf("Could not set value for %s type", typeField.Type.Name())
+		return fmt.Errorf("Could not set value for %s type", fieldType.Name())
 	}
 	return nil
 }
